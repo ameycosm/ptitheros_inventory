@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ptitheros User Inventory</title>
+  <style>
+    body {
+      font-family: monospace;
+        background-color: dimgray;
+        background-image: url(https://i.pinimg.com/564x/0a/6a/86/0a6a86fa7b233c02fc048f74872cea95.jpg);
+        background-size: cover;
+        background-attachment: fixed;
+        background-blend-mode: overlay;
+        background-position: top center;
+        color: white;
+    }
+
+    .spreadsheet {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-gap: 0px;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .user {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .user h3 {
+      margin-top: 0;
+    }
+
+    .inventory {
+      margin-top: 10px;
+    }
+
+    .inventory-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .inventory-item span {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+ 
+ <center>
+     <img src="https://f2.toyhou.se/file/f2-toyhou-se/images/29205761_3BVhkdwNwYrh5oY.gif">
+ 
+  <h1>Ptitheros Inventory</h1>
+
+  <h2>Add User</h2>
+  <form id="addUserForm">
+    <label for="userName">User Name:</label>
+    <input type="text" id="userName" required>
+
+    <label for="userInventory">Inventory:</label>
+    <input type="text" id="userInventory" placeholder="Enter comma-separated items" required>
+
+    <button type="submit">Add User</button>
+  </form>
+
+  <h2>Add Item to User's Inventory</h2>
+  <form id="addItemForm">
+    <label for="userSelect">Select User:</label>
+    <select id="userSelect" required>
+      <option value="" disabled selected>Select a user</option>
+    </select>
+
+    <label for="itemSelect">Select Item:</label>
+    <select id="itemSelect" required>
+      <option value="" disabled selected>Select an item</option>
+    </select>
+
+    <button type="submit">Add Item</button>
+  </form>
+  
+  <img style="height: 150px;" src="https://f2.toyhou.se/file/f2-toyhou-se/images/61931823_T7VmS0Cwvja7aXG.png">
+ </center>
+  
+  <div class="spreadsheet" id="spreadsheet"></div>
+
+  <script>
+    // Define the user and inventory data
+    const users = [
+      { name: "aaimasqtch", inventory: ["Item1", "Item2", "Item3"] },
+      { name: "suspicious_alex", inventory: ["Item4", "Item5"] },
+      { name: "juliejewel", inventory: ["Item6", "Item7", "Item8", "Item9"] },
+    ];
+
+    const itemDict = {
+        "Chalice Shard": { rarity: 40 }, //uc
+        "Prime Fossil": { rarity: 60 }, //r
+        "Alpha Skull": { rarity: 100 }, //my
+        "Jessel Skull": { rarity: 60 }, //r
+        "Scalace Pelt": { rarity: 60 }, //r
+        "Spinning Gear": { rarity: 60 }, //r
+        "Sky Feather": { rarity: 60 }, //r
+        "Star-Studded Dripleaf": { rarity: 60 }, //r
+        "Dream Orb": { rarity: 80 }, //l
+        "Candy Core": { rarity: 40 }, //uc
+        "Liquid Metal": { rarity: 20 }, //c
+        "Inner Gem": { rarity: 20 }, //c
+        "Royal Infusion": { rarity: 80 }, //l
+        "Divine Grace": { rarity: 100 }, //my
+        "Eyes of the Sea": { rarity: 100 }, //my
+        "White Light": { rarity: 100 }, //my
+        "Ancient Ash": { rarity: 100 }, //my
+        "Rain Dance": { rarity: 100 }, //my
+        "Witchdoctor": { rarity: 100 }, //my
+        "Time Blessing": { rarity: 80 }, //l
+        "Botany Enchant": { rarity: 20 }, //c
+        "Geo Enchant": { rarity: 20 }, //c
+        "Thistle Curse": { rarity: 40 }, //uc
+        "Honeycomb Curse": { rarity: 40 }, //uc
+        "Rotten Curse": { rarity: 40 }, //uc
+        "Aquatic Features": { rarity: 40 }, //uc
+        "Glass Skin": { rarity: 60 }, //r
+        "Shadowvale Eyes": { rarity: 60 }, //r
+        "Dark Rune": { rarity: 100 }, //my
+        "Monster Companion": { rarity: 80 }, //l
+        "Elemental Bell": { rarity: 80 }, //l
+        "Cloud Walker": { rarity: 80 }, //l
+        "Mood Ring": { rarity: 80 }, //l
+        "Glass Skin Snowglobe": { rarity: 80 }, //l
+        "Glass Skin Jelly": { rarity: 80 }, //l
+        "Aquatic Features Fantamen": { rarity: 80 }, //l
+        "Ghost Tion": { rarity: 60 }, //r
+        "Ghost Fen": { rarity: 60 }, //r
+        "MU Amorphous Eyes": { rarity: 60 }, //r
+        "MU Needle Claws": { rarity: 60 }, //r
+        "MU Iridescence": { rarity: 20 }, //c
+        "MU Aura Vents": { rarity: 60 }, //r
+        "MU Long Tail": { rarity: 60 }, //r
+        "MU Cerub Wings": { rarity: 60 }, //r
+        "MU Glowing Mouth": { rarity: 60 }, //r
+        "MU Long Body": { rarity: 60 }, //r
+        "MU Finned Fur": { rarity: 60 }, //r
+        "MU Essence Wings": { rarity: 60 }, //r
+        "ADDON Pocketworld Rune": { rarity: 100 }, //my
+        "ADDON Spirit Glasses": { rarity: 80 }, //l
+    };
+
+    // Accessing the data
+    const spreadsheet = document.getElementById("spreadsheet");
+    const addUserForm = document.getElementById("addUserForm");
+    const addItemForm = document.getElementById("addItemForm");
+    const userSelect = document.getElementById("userSelect");
+    const itemSelect = document.getElementById("itemSelect");
+
+    addUserForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const userNameInput = document.getElementById("userName");
+      const userInventoryInput = document.getElementById("userInventory");
+
+      const userName = userNameInput.value.trim();
+      const userInventory = userInventoryInput.value
+        .trim()
+        .split(",")
+        .map((item) => item.trim());
+
+      if (userName !== "" && userInventory.length > 0) {
+        addUser(userName, userInventory);
+        renderUserSelectOptions();
+        renderSpreadsheet();
+        userNameInput.value = "";
+        userInventoryInput.value = "";
+      }
+    });
+
+    addItemForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const selectedUser = userSelect.value;
+      const selectedItem = itemSelect.value;
+
+      if (selectedUser !== "" && selectedItem !== "") {
+        const user = users.find((user) => user.name === selectedUser);
+        if (user) {
+          addItemToUser(user, selectedItem);
+          renderSpreadsheet();
+        }
+      }
+    });
+
+    function addUser(name, inventory) {
+      users.push({ name, inventory });
+    }
+
+    function addItemToUser(user, item) {
+      user.inventory.push(item);
+    }
+
+    function removeItem(user, index) {
+      user.inventory.splice(index, 1);
+    }
+
+    function renderSpreadsheet() {
+      spreadsheet.innerHTML = "";
+      users.forEach((user) => {
+        const userDiv = document.createElement("div");
+        userDiv.classList.add("user");
+        userDiv.innerHTML = `<h3> ${user.name}</h3><div class="inventory"><p>Inventory:</p></div>`;
+
+        const inventoryList = document.createElement("ul");
+        user.inventory.forEach((item, index) => {
+          const listItem = document.createElement("li");
+          listItem.classList.add("inventory-item");
+          listItem.innerHTML = `<span style="color: ${getItemColor(item)}">${item}</span>`;
+
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "Remove";
+          deleteButton.addEventListener("click", () => {
+            removeItem(user, index);
+            renderSpreadsheet();
+          });
+
+          listItem.appendChild(deleteButton);
+          inventoryList.appendChild(listItem);
+        });
+
+        userDiv.querySelector(".inventory").appendChild(inventoryList);
+        spreadsheet.appendChild(userDiv);
+      });
+    }
+
+    function renderUserSelectOptions() {
+      userSelect.innerHTML = '<option value="" disabled selected>Select a user</option>';
+      users.forEach((user) => {
+        const option = document.createElement("option");
+        option.value = user.name;
+        option.textContent = user.name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    function renderItemSelectOptions() {
+      itemSelect.innerHTML = '<option value="" disabled selected>Select an item</option>';
+      for (const item in itemDict) {
+        const option = document.createElement("option");
+        option.value = item;
+        option.textContent = item;
+        itemSelect.appendChild(option);
+      }
+    }
+
+    function getItemColor(item) {
+      const rarity = itemDict[item]?.rarity;
+      if (rarity === 20) {
+        return "#9ed1e1"; // Light Blue
+      } else if (rarity === 40) {
+        return "#b79ee1"; // Thistle/Light Purple
+      } else if (rarity === 60) {
+        return "#e5958d"; // Light Red
+      } else if (rarity === 80) {
+        return "#e6cd67"; // Yellow
+      } else if (rarity === 100) {
+        return "#c7faff"; // Teal
+      }
+      return "#000000"; // Black
+    }
+
+    // Initial rendering of the spreadsheet and select options
+    renderSpreadsheet();
+    renderUserSelectOptions();
+    renderItemSelectOptions();
+  </script>
+</body>
+</html>
+
